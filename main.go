@@ -74,6 +74,7 @@ func main() {
 func doSomething(rowData rowWithRetryCount, retryQueue chan rowWithRetryCount, succeedRowCh, failedRowCh, execCountCh chan struct{}, wg *sync.WaitGroup) {
 	execCountCh <- struct{}{}
 	if rowData.retryCount > 9 {
+		// 10回retryしてもダメだったときは、その行は失敗として完了させる
 		failedRowCh <- struct{}{}
 		wg.Done()
 		return
@@ -85,6 +86,7 @@ func doSomething(rowData rowWithRetryCount, retryQueue chan rowWithRetryCount, s
 		// 5%の確率で失敗したらexecQueueに積み直す
 		fmt.Printf("この行は失敗！: %+v\n", rowData.row)
 		retryQueue <- newRowWithRetryCount(rowData.row, rowData.retryCount+1)
+		// 失敗したときはwg.Done()しないので、成功するまでwaitされる
 		return
 	}
 
